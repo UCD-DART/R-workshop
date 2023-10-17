@@ -409,19 +409,15 @@ getInfectionRate = function(pools,interval, target_year,target_disease,pt_estima
 getPoolsComparisionTable = function(pools,target_disease, species_seperate=F){
   
   
-  pools_status = pools %>%filter(target_acronym==target_disease)%>%
+  pools_status = pools %>%
+    filter(target_acronym==target_disease)%>%
     group_by(surv_year) %>%
     count(status_name)%>%
     pivot_wider(id_cols = c(surv_year),
                 names_from = "status_name", 
                 values_from = "n",values_fill = 0)%>%
     mutate(Total = sum(Confirmed,Negative, na.rm=T))%>%
-    mutate(PercentPositive = (Confirmed/Total)*100) %>%
-    kbl(col.names = c("Disease Year", "Positive","Negative",
-                      "Total","Percent Positive"))%>%  
-    kable_styling(bootstrap_options = "striped",
-                  font_size = 16,
-                  html_font = "Cambria")
+    mutate(PercentPositive = (Confirmed/Total)*100) 
   
   if(species_seperate == T){
     pools_status = pools %>% filter(target_acronym==target_disease)%>%
@@ -431,12 +427,7 @@ getPoolsComparisionTable = function(pools,target_disease, species_seperate=F){
                   names_from = "status_name", 
                   values_from = "n",values_fill = 0)%>%
       mutate(Total = sum(Confirmed,Negative, na.rm=T))%>%
-      mutate(PercentPositive = (Confirmed/Total)*100) %>%
-      kbl(col.names = c("Disease Year","Species" ,"Positive","Negative",
-                        "Total","Percent Positive"))%>%  
-      kable_styling(bootstrap_options = "striped",
-                    font_size = 16,
-                    html_font = "Cambria")
+      mutate(PercentPositive = (Confirmed/Total)*100) 
     
   }
   
@@ -448,14 +439,9 @@ getPoolsComparisionTable = function(pools,target_disease, species_seperate=F){
 getTrapTypeTally = function(collections){
   
   tt_tb= table(collections$trap_acronym,collections$surv_year)
-  limit = dim(tt_tb)[2]
-  traps_set_tb = kbl(tt_tb) %>%
-    kable_styling(bootstrap_options = "striped",
-                  font_size = 16,
-                  html_font = "Cambria")%>%
-  add_header_above(c("Trap Type" = 1, "Disease Year" = limit))
+
   
-  return(traps_set_tb)
+  return(tt_tb)
   
 }
 
