@@ -98,7 +98,6 @@ getArthroCollections<- function(start_year, end_year, agency_code){
       response <- GET(url_with_params, add_headers(headers))
       content <- content(response, as = "text")
       
-      return(content)
       df_content = fromJSON(content, flatten = T)
       
       #Breaks loop when df_content returns no more data 
@@ -292,7 +291,8 @@ getAbundance <- function(collections,interval, species_list = NULL, trap_list = 
 #species_list, trap_list filter the data according to abbreviated scientific name (Cx pipiens etc) and trap acronym  
 #If species_list, trap_list are left as NULL, the default assumes "All Options Selected"
 #Delta change refers to the percent change between the target year and interval abundance and the five year average abundance for that interval
-getAbundanceAnomaly<- function(collections, interval, target_year,species_seperate, species_list = NULL, trap_list = NULL){
+getAbundanceAnomaly<- function(collections, interval, target_year,
+                               species_seperate, species_list = NULL, trap_list = NULL){
   
   #check that at least 5 years of data is present from target year. E.g.
   present_years = unique(collections$surv_year)
