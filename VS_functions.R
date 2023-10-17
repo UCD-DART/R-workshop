@@ -130,7 +130,7 @@ getArthroCollections<- function(start_year, end_year, agency_code){
 
 #Returns pools data for specified years. Range: [Start_year, End_year]
 #Calls getToken()
-getPools<- function(start_year, end_year){
+getPools<- function(start_year, end_year, agency_code){
   url <- "https://api.vectorsurv.org/v1/arthropod/pool"
   
   headers <- c(
@@ -447,11 +447,13 @@ getPoolsComparisionTable = function(pools,target_disease, species_seperate=F){
 #Produces a table of the types of traps set for each year present in the current data
 getTrapTypeTally = function(collections){
   
-  traps_set_tb = kbl(table(collections$trap_acronym,collections$surv_year)) %>%
+  tt_tb= table(collections$trap_acronym,collections$surv_year)
+  limit = dim(tt_tb)[2]
+  traps_set_tb = kbl(tt_tb) %>%
     kable_styling(bootstrap_options = "striped",
                   font_size = 16,
                   html_font = "Cambria")%>%
-  add_header_above(c("Trap Type" = 1, "Disease Year" = 6))
+  add_header_above(c("Trap Type" = 1, "Disease Year" = limit))
   
   return(traps_set_tb)
   
