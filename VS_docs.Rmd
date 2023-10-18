@@ -1,6 +1,8 @@
 ---
 title: "Tutortial Documentation"
-output: html_document
+output:
+  pdf_document: default
+  html_document: default
 date: "2023-10-17"
 ---
 
@@ -34,9 +36,10 @@ source("VS_functions.R")
 # Retriving Data
 
 **getArthroCollections(...)**
+
 *Description*
 
-getArthroCollections(...) obtains data on a year range (start_year, end_year) and agency_id. It prompts the user for their gateway username and password before retrieving the associated data.
+getArthroCollections(...) obtains collections data on a year range (start_year, end_year) and agency_id. It prompts the user for their Gateway username and password before retrieving the associated data. Agency id is the number associated with your agency through Vectorsurv. If you have access to multiple agencies, id can be used to specific what data you wish to retrieve. You can only retrieve data from agencies linked to your Gateway account. 
 
 *Usage*
 
@@ -55,11 +58,25 @@ collections = getArthroCollections(2022,2023, 55)
 ```
 
 
+**getPools(...)**
+
+*Description*
+
+getPools(...) similar to getArthroCollections() obtains pools on a year range (start_year, end_year) and agency_id. It prompts the user for their Gateway username and password before retrieving the associated data. getPools() retrieve data for both mosquito and tick pools.
+
+*Usage*
+
+getPools(start_year, end_year, agency_code)
+
+*Arguments*
+
+- start_year: Beginning of year range 
+- end_year: End of year range
+- agency_code: Agency ID number 
+
 ```{r}
-
-
 #Example
-#pools = getPools(2022,2023, 55)
+pools = getPools(2022,2023, 55)
 ```
 
 ## Write Data to file
@@ -92,23 +109,91 @@ filter(collections,trap_nights==1)
 
 
 ## Abundance
-getAbundance()
+
+**getAbundance(...)**
+
+*Description*
+
+getAbundance(...) uses any amount of arthro collections data to calculate the abundance for the specified parameters. The function calculates using the methods of the Gateway Abundance calculator.
+
+
+*Usage*
+
+getAbundance(collections,interval, species_list = NULL, trap_list = NULL, species_seperate = FALSE)
+
+*Arguments*
+
+- collections: Collections data retrieved from getArthroCollections(...) 
+- interval: Calculation interval for abundance, accepts "collection_date","Biweek","Week", and "Month.
+- species_list: Species filter for calculating abundance. Species_display_name is the accepted notation. To see a list of species present in your data run unique(collections$species_display_name). If species is unspecified, the default NULL will return data for all species in data.
+- trap_list: Trap filter for calculating abundance. Trap_acronym is the is the accepted notation. Run unique(collections$trap_acronym) to see trap types present in your data. If trap_list is unspecified, the default NULL will return data for all trap types.
+- species_seperate: Should the species in species_list have abundance calculated separately? Setting to FALSE calculates the combined abundance. The same result can be performed by calculating on one species at the time.
+
 
 ```{r}
+getAbundance(collections, interval = "Biweek", species_list = c("Cx tarsalis", "Cx pipiens"), trap_list = "CO2", species_seperate = FALSE)
+
 ```
+
+
 
 ## Abundance Anomaly (comparison to 5 year average)
 
-getAbundanceAnomaly()
+**getAbundanceAnomaly()**
+
+*Description*
+
+getAbundanceAnomaly(..) requires at least five years prior to the target_year of arthro collections data to calculate for the specified parameters. The function uses the methods of the Gateway Abundance Anomaly calculator, and will not work if there is fewer than five years of data present.  
+
+
+*Usage*
+
+getAbundanceAnomaly(collections,interval,target_year, species_list = NULL, trap_list = NULL, species_seperate = FALSE)
+
+*Arguments*
+
+- collections: Collections data retrieved from getArthroCollections(...) 
+- interval: Calculation interval for abundance, accepts "collection_date","Biweek","Week", and "Month.
+- target_year: Year to calculate analysis on. Collections data must have a year range of at least (target_year - 5, target_year).
+- species_list: Species filter for calculating abundance. Species_display_name is the accepted notation. To see a list of species present in your data run unique(collections$species_display_name). If species is unspecified, the default NULL will return data for all species in data.
+- trap_list: Trap filter for calculating abundance. Trap_acronym is the is the accepted notation. Run unique(collections$trap_acronym) to see trap types present in your data. If trap_list is unspecified, the default NULL will return data for all trap types.
+- species_seperate: Should the species in species_list have abundance calculated separately? Setting to FALSE calculates the combined abundance. The same result can be performed by calculating on one species at the time.
+
 
 ```{r}
+collections = getArthroCollections(2018,2023, 55)
+
+getAbundanceAnomaly(collections, interval = "Biweek",target_year = 2023, species_list = c("Cx tarsalis", "Cx pipiens"), trap_list = "CO2", species_seperate = FALSE) 
 ```
 
 ## Infection Rate
 
-getInfectionRate()
+**getInfectionRate()**
+
+*Description*
+
+getInfectionRate(..) requires at least five years prior to the target_year of arthro collections data to calculate for the specified parameters. The function uses the methods of the Gateway Abundance Anomaly calculator, and will not work if there is fewer than five years of data present.  
+
+
+*Usage*
+
+getInfectionRate(pools,interval, target_year, target_disease,pt_estimate, species_list = c(NULL), trap_list = c(NULL))
+
+*Arguments*
+
+- pools: Pools data retrieved from getPools(...) 
+- interval: Calculation interval for abundance, accepts "collection_date","Biweek","Week", and "Month.
+- target_year: Year to calculate infection rate for. This year must be present in the data.
+- target_disease: The disease to calculate infection rate for--i.e. "WNV". Disease acronyms are the accepted input. To see a list of disease acronyms, run unique(pools$target_acronym).
+- pt_estimate: The estimation type for infection rate. Options include: "mle","bc-"mle", "mir."
+- species_list: Species filter for calculating abundance. Species_display_name is the accepted notation. To see a list of species present in your data run unique(pools$species_display_name). If species is unspecified, the default NULL will return data for all species in data.
+- trap_list: Trap filter for calculating abundance. Trap_acronym is the is the accepted notation. Run unique(pools$trap_acronym) to see trap types present in your data. If trap_list is unspecified, the default NULL will return data for all trap types.
+
+
 
 ```{r}
+IR = getInfectionRate(pools, interval = "Week", target_year = 2023, target_disease = "WNV", pt_estimate = "mle", species_list = c("Cx pipiens"),trap_list = c("CO2","GRVD") )
+IR
 ```
 
 ## Vector Index
@@ -116,30 +201,90 @@ getInfectionRate()
 getVectorIndex()
 
 ```{r}
+#TODO
 ```
 
 # Tables
 
-getTrapTypeTally()
+**getPoolsComparisionTable()**
+
+*Description*
+
+getPoolsComparisionTable() produces a frequency table for positive and negative pools counts by year and species. The more years present in the data, the larger the table.
+
+*Usage*
+
+getPoolsComparisionTable(pools,target_disease, species_seperate=F)
+
+*Arguments*
+
+- pools: Pools data retrieved from getPools(...) 
+- target_disease: The disease to calculate infection rate for--i.e. "WNV". Disease acronyms are the accepted input. To see a list of disease acronyms, run unique(pools$target_acronym).
+- species_seperate: Should the pools comparison be split by species of each pool. Default is FALSE.
 
 ```{r}
-```
-
-
-getPoolsComparisionTable()
-
-```{r}
+getPoolsComparisionTable(pools, "WNV", species_seperate = T)
 ```
 
 
 
 # Charts
 
-#Requires
-ProcessAbunAnom()
-plotInfectionRate()
+When plotting with libraries in R, it is easiest when the data is prepared in long form.
+
+
+**ProcessAbunAnom()**
+
+*Description*
+
+ProcessAbunAnom() processes the output returned from getAbundanceAnomaly() into a long form suitable for plotting in ggplot.
+
+*Usage*
+
+ProcessAbunAnom(AbAnomOutput)
+
+*Arguments*
+
+- AbAnomOutput: Output from returned getAbundanceAnomaly()
+
 ```{r}
 
+AbAnOut = getAbundanceAnomaly(collections, interval = "Biweek",target_year = 2023, species_list = c("Cx tarsalis", "Cx pipiens"), species_seperate = TRUE) #species_seperate set to true will allow for us to facet wrap along species
+
+
+AbAnOut_L = ProcessAbunAnom(AbAnOut)
+
+#Example using ggplot
+AbAnOut_L %>%  filter(Abundance_Type %in% c("2023_Abundance",
+                                            "Five_Year_Avg"))%>%  
+  ggplot(aes(x=Biweek,
+             y= Abundance_Calculation,
+             color = Abundance_Type)) +
+  geom_point()+ 
+  geom_line() + 
+  facet_wrap(~species_display_name)+
+  labs(title="2023 Abundance Anomaly",y = "")
+
+```
+
+**plotInfectionRate()**
+
+*Description*
+
+plotInfectionRate() plots the output returned from getInfectionRate() with confidence intervals using ggplot
+
+*Usage*
+
+plotInfectionRate(InfRtOutput)
+
+*Arguments*
+
+- InfRtOutput: Output from returned getInfectionRate()
+
+```{r}
+IR = getInfectionRate(pools, interval = "Week", target_year = 2023, target_disease = "WNV", pt_estimate = "mle", species_list = c("Cx pipiens"),trap_list = c("CO2","GRVD") )
+
+plotInfectionRate(InfRtOutput = IR)
 
 ```
 

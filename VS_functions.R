@@ -292,7 +292,7 @@ getAbundance <- function(collections,interval, species_list = NULL, trap_list = 
 #If species_list, trap_list are left as NULL, the default assumes "All Options Selected"
 #Delta change refers to the percent change between the target year and interval abundance and the five year average abundance for that interval
 getAbundanceAnomaly<- function(collections, interval, target_year,
-                               species_seperate, species_list = NULL, trap_list = NULL){
+                               species_list = NULL, trap_list = NULL, species_seperate){
   
   #check that at least 5 years of data is present from target year. E.g.
   present_years = unique(collections$surv_year)
