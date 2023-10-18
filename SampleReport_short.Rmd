@@ -1,0 +1,343 @@
+---
+title: "VectorSurv Sample Report using R"
+date: "October 25, 2023"
+author: "Prepared by Christina and Olivia"
+geometry: left=1in,right=1in,top=1in,bottom=1in
+---
+```{r, include=FALSE}
+#Configures how we want chunks to output
+knitr::opts_chunk$set(
+  message=FALSE, warning=FALSE, results='asis')
+
+```
+
+
+```{r chunk-2, include=FALSE}
+source("VS_functions_1.R")
+```
+
+```{r retrieve-data, include=FALSE}
+## Retrieve your data from the VectorSurv API
+##Uncomment the code below and and run it once. Before moving on, recomment the code. This will prevent R from retreiving your data each time you knit your file. 
+
+# collections2 = getArthroCollections(2020,2023)
+# pools = getPools(2022,2023)
+
+# write.csv2(collections, file="collections_18_23.csv")
+#write.csv2(pools, file="pools_22_23.csv")
+```
+
+```{r chunk-4, echo=FALSE}
+##Read your csvs into your R workspace to continue working with them
+collections = read.csv("collections_18_23.csv", sep = ",")
+pools = read.csv("pools_18_23.csv", sep=",")
+# 
+# #the following are options for filtering your data
+# collections = collections %>% 
+#   filter(agency_code == "SAYO")
+```
+
+I can include any text relevant to the report, such as a quick summary of what's happening at this point in the season and I can **bold anything that is important** or maybe *italicize it*. This is using the basics of [Markdown](https://www.markdownguide.org/cheat-sheet/). I can also create specific sections, such as Trapping effort, Abundance, West Nile Activity, etc, and can change the header size.
+
+## Abundance
+
+I can include text anywhere outside of the code chunks and the text will show up in my final file. 
+
+## Pools
+
+```{r echo=FALSE}
+#number of positive mosquito pools out of total tested for 2023
+
+mosquitotargets <- c("SLEV","WEEV","WNV")
+
+mosquitopools2023 <- pools %>%
+  filter(surv_year == "2023") %>%
+  filter(target_acronym %in% mosquitotargets) %>%
+group_by(target_acronym)%>%
+  count(status_name)%>%
+  pivot_wider(names_from = status_name, values_from = n) %>%
+  mutate_all(~replace(., is.na(.), 0))%>%
+  mutate(total = Confirmed + Negative)%>%
+  select(-Negative)
+
+
+knitr::kable((mosquitopools2023[, 1:3]), caption = "2023 YTD Pool Results", col.names = c('Target', 'Positive','Total'))%>% 
+  kableExtra::kable_styling(bootstrap_options = "striped",full_width = F, position = "center")
+```
+
+```{r echo=FALSE}
+getPoolsComparisionTable(pools,"WNV", species_seperate = F) %>%
+  footnote(general = "Table 2: WNV Pool Status Frequency by Year",
+           general_title = "") %>%
+  kableExtra::kable_styling(bootstrap_options = "striped",full_width = F, position = "center")
+
+
+getPoolsComparisionTable(pools, "WNV", species_seperate = T) %>%
+  footnote(general = "Table 3: WNV Pool Status Frequency by Year and Species",
+           general_title = "") %>%
+  kableExtra::kable_styling(bootstrap_options = "striped",full_width = F, position = "center")
+```
+
+
+
+
+
+## Abundance 
+
+```{r include=FALSE}
+## Create tables for abundance across all species treated separately 
+## Here we will use the getAbundance() function from the provided source file
+
+ all_abundance_sep = collections %>% 
+                             getAbundance(interval = "Biweek",
+                             species_list =  c("Cx pipiens", "Cx tarsalis"), 
+                             trap_list =  NULL, 
+                             species_seperate = TRUE)
+
+all_abundance = collections %>% 
+                getAbundance(interval = "Biweek",
+                             species_list =  NULL, 
+                             trap_list =  NULL, 
+                             species_seperate = FALSE) 
+```
+
+
+
+
+## Connecting to VectorSurv Data
+
+```{r eval=FALSE, include=FALSE}
+##  Retrieve data for desired year range
+##  Must have at least 5 years of data from the target year to perform abundance anomaly calculation
+##  This step often takes the longest, so it is recommended to build the report in .rmd and then knit the file once it is complete.
+
+##  Since it takes time and computing power to retrieve data from the API the recommended mode of retrival is to pull the data from the API then write that data to a .csv file in your current directory. Finally, read that csv file when running a report. This method decreases run time significantly when using knitr. 
+
+##  Uncomment code below and run once before moving on, recomment when done
+
+# collections = getArthroCollections(2018,2023,55)
+# pools = getPools(2018,2023,55)
+# 
+# write.csv(collections, file="collections_18_23.csv")
+# write.csv(pools, file="pools_18_23.csv")
+
+```
+
+```{r include=FALSE}
+## By this step you should already have the data from the API written to a csv file
+
+collections = read.csv("collections_18_23.csv", sep = ",")
+pools = read.csv("pools_18_23.csv", sep=",")
+
+getwd()
+```
+
+
+## Filtering and Tables
+
+```{r include=FALSE}
+
+## If you have access to more than one agency, the data can be filtered using dplyr
+## Likewise, all columns of data can be filtered for a more specific data set 
+##  the pipe operator '%>%' can be used to send data to functions and on ward
+## here we use the dplyr's filter() function
+
+
+collections = collections %>% 
+  filter(agency_code == "SAYO")
+
+## Pools data contains information about ticks and mosquitos. Since we are focusing on mosquitos only right now, filter the target_vector 
+
+pools = pools %>% 
+  filter(target_vector == "mosquito")
+
+##  alternatively
+
+#filter(collections,
+#       agency_code =="SAYO")
+#
+#filter(collections,
+#         agency_code=="SAYO" & 
+#         sex_type=="female" &
+#         species_display_name %in% c("Cx tarsalis",
+#                                     "Cx pipiens"))
+
+
+```
+
+```{r include=FALSE}
+## Disease week and biweek can be set using lubridate's epiweek(...) function on collection date
+
+collections$disweek = epiweek(collections$collection_date)
+collections$biweek = ceiling(epiweek(collections$collection_date)/2)
+
+pools$disweek = epiweek(pools$collection_date)
+pools$biweek = ceiling(epiweek(pools$collection_date)/2)
+```
+
+
+
+
+
+```{r eval=FALSE, include=FALSE}
+## Quick view of data retrieved from API using Datatables html view
+## Datatables (DT) can be rendered in html but not pdf or word
+## This is set to not shown in the rendered report, but can be viewed in the code
+
+datatable(collections, caption="Collections Data 2018-2023")
+datatable(pools, caption="Pools Data 2022-2023")
+```
+
+```{r eval=FALSE, include=FALSE}
+## The kable function from the knitr package can be rendered in pdf, word, and html, for the report
+## Unlike Datatables, kable does not produce tables with dynamic features but kable can still be stylized 
+## We will go over how to change fonts, highlight rows, and stylize kable tables
+
+kable(head(collections), caption = "Collections Data 2018-2023" )%>%  kable_styling(bootstrap_options = "striped",
+                              font_size = 20, html_font = "Cambria")%>%  footnote(general = "Table X: Excerpt of Collections Data", general_title = "")
+
+
+kable(head(pools))%>%  kable_styling(bootstrap_options = "striped",
+                              font_size = 20, html_font = "Cambria")%>%  footnote(general = "Table X: Excerpt of Pools Data", general_title = "")
+
+
+```
+
+
+```{r echo=FALSE}
+## 
+getTrapTypeTally(collections) %>%
+  footnote(general = "Table 1: Traps Set by Year and Type",
+           general_title = "")
+
+
+
+```
+
+```{r echo=FALSE}
+## Likewise, getPoolsComparisionTable() can be used to get a tally of positive and negative pools 
+
+
+getPoolsComparisionTable(pools,"WNV", species_seperate = F) %>%
+  footnote(general = "Table 2: WNV Pool Status Frequency by Year",
+           general_title = "")
+
+
+getPoolsComparisionTable(pools, "WNV", species_seperate = T) %>%
+  footnote(general = "Table 3: WNV Pool Status Frequency by Year and Species",
+           general_title = "")
+
+
+
+```
+
+
+
+
+## Abundance 
+
+```{r include=FALSE}
+## Create tables for abundance across all species treated separately 
+## Here we will use the getAbundance() function from the provided source file
+
+ all_abundance_sep = collections %>% 
+                             getAbundance(interval = "Biweek",
+                             species_list =  c("Cx pipiens", "Cx tarsalis"), 
+                             trap_list =  NULL, 
+                             species_seperate = TRUE)
+
+all_abundance = collections %>% 
+                getAbundance(interval = "Biweek",
+                             species_list =  NULL, 
+                             trap_list =  NULL, 
+                             species_seperate = FALSE) 
+```
+
+
+
+```{r eval=FALSE, include=FALSE}
+## datatable renders a filterable and sortable table
+datatable(all_abundance, caption="Biweekely abundance for all individual species")
+
+
+```
+
+
+```{r include=FALSE}
+## Calculate abundance analysis on Cx tarsalis and Cx pipiens species for 2023
+
+abanom_data = getAbundanceAnomaly(collections,interval="Week",
+                   species_list =  c("Cx tarsalis", "Cx pipiens"),
+                   target_year=2023,
+                   trap_list = NULL,
+                   species_seperate=T)
+
+```
+
+
+
+
+```{r echo=FALSE}
+##  Looking at tarsalis abundance anomaly, percent change gives a normalized difference in abundance compared to the five year average. 
+
+
+abanom_data_L = ProcessAbunAnom(abanom_data)
+
+
+abanom_plt = abanom_data_L %>%  filter(Abundance_Type %in% c("2023_Abundance",
+                                                                                "Five_Year_Avg"))%>%  
+  ggplot(aes(x=Week,
+             y= Abundance_Calculation,
+             color = Abundance_Type)) +
+  geom_point()+ 
+  geom_line() + 
+  facet_wrap(~species_display_name)+
+  labs(title="2023 Abundance Anomaly",y = "")
+
+
+
+delta_plt = abanom_data_L %>% 
+  filter(Abundance_Type =="Delta")%>%
+  mutate(Change = ifelse(Abundance_Calculation > 0, "Increase", "Decrease")) %>%
+  ggplot(aes(x=Week,
+             y= Abundance_Calculation,
+             fill=Change)) +
+  geom_bar(stat="identity")+
+  facet_wrap(~species_display_name)+
+  labs(x="Biweek",
+       y="Percent Change", 
+       title = "Relative Abundance 2023, % Change from 5-year average",
+       fill="Relative Change") 
+
+abanom_plt
+delta_plt
+
+
+#ggplotly(plt_ab_av)
+#ggplotly(plt_delta)
+```
+
+
+
+
+
+
+
+## Infection Rate
+
+
+```{r include=FALSE}
+
+#Take a look at WNV infection rate for 2023 and 2022 for Cx tarsalis on all traps
+
+IR_biwk_tar23 = getInfectionRate(pools, "Week", target_year = 2023, target_disease = "WNV", pt_estimate = "mle", species_list = "Cx tarsalis") 
+
+
+IR_biwk_tar22 = getInfectionRate(pools, "Biweek", target_year = 2022, target_disease = "WNV", pt_estimate = "mle", species_list = "Cx tarsalis") 
+
+#datatable(IR_biwk_tar23)
+#datatable(IR_biwk_tar22)
+```
+
+
+
