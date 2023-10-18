@@ -33,8 +33,8 @@ library(kableExtra)
 getToken = function(){
   
   #Prompt credentials
-  username = rstudioapi::askForPassword("Database username")
-  password = rstudioapi::askForPassword("Database password")
+  username = rstudioapi::askForPassword("Gateway username")
+  password = rstudioapi::askForPassword("Gateway password")
   
   
   #HTTP 
