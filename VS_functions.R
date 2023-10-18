@@ -472,7 +472,7 @@ plotInfectionRate = function(InfRtOutput){
   interval_name = colnames(InfRtOutput)[2]
   colnames(InfRtOutput)[2]="INTERVAL"
   InfRtOutput %>%
-    ggplot(aes(x = INTERVAL, y = mle, color= "Infection Rate"))+
+    ggplot(aes(x = INTERVAL, y = Point_Estimate, color= "Infection Rate"))+
     geom_point( color="firebrick")+
     geom_path( fill="firebrick")+
     geom_line(aes(INTERVAL, Lower_CI), color = "steelblue", size = 0.1) + 
