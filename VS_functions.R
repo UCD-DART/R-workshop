@@ -11,7 +11,7 @@ if (!require(httr)) install.packages('httr')
 if (!require(readxl)) install.packages('readxl')
 if (!require(jsonlite)) install.packages('jsonlite')
 if (!require(knitr)) install.packages('knitr')
-if (!require(kableExtra)) install.packages('kableExtra')
+if (!require(kableExtra)) devtools::install_github("kupietz/kableExtra")
 
 
 #Load relevant libraries
