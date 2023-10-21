@@ -1,5 +1,5 @@
 ---
-title: "Tutortial Documentation"
+title: "R Training Documentation"
 output:
   pdf_document: default
   html_document: default
@@ -17,21 +17,42 @@ knitr::opts_chunk$set(
 
 # Introduction
 
-### Source files, directory
+### Source files, directories, important functions in R
+
+The working directory is the folder your R session 'lives in.' In general, it is good practice to have your working directory to be set to the folder which houses the open file. getwd() displays the current working directory of the session. You can set the working directory to the path of the desired folder by using setwd(...). 
+
+If ever you are confused about a package or function in R studio, typing '?' in front of the argument will display the documentation for that function in your session. For information on Vectorsurv specific functions, please see the documentation below.
+
 ```{r}
 
 #To get current directory
 getwd()
 
-#'VS_functions.R' must be in the same directory as the .rmd files which access its functions, you can set the working directory 
+#To get information on function in R documentation
+?getwd()
 
-#Set below to the location of the downloaded files on your machine
+
+#'VS_functions.R' should be in the same directory as the .rmd files which access its functions, you can set the working directory 
+
+#Path to folder on my computer: "C:\Users\Christina\Desktop\R-tutorial" this path will be slightly different for you depending on the file location.
+
+#Set below to the location of the downloaded files on your machine, make sure to change the direction of the slash from "\" to "/" to indicate opening of the folder. 
+
 setwd("/Users/Christina/Desktop/R-tutorial")
 
+
+```
+
+There is one R files. The .R file is a source file that contains all of the functions you will need to run the .RMarkdown files. You do not need to touch the source file. The .RMarkdown is a pre-coded sample report that you can customize to suit your needs. 
+
+```{r}
 #loads relevant packages and functions
 source("VS_functions.R")
 
 ```
+
+
+
 
 # Retriving Data
 
@@ -49,7 +70,7 @@ getArthroCollections(start_year, end_year, agency_code)
 
 - start_year: Beginning of year range 
 - end_year: End of year range
-- agency_code: Agency ID number 
+- agency_id: Agency ID number, if left blank, the defualt will return data for all agencies linked to you account. The majority of users are linked to one agency  
 
 
 ```{r}
@@ -66,13 +87,13 @@ getPools(...) similar to getArthroCollections() obtains pools on a year range (s
 
 *Usage*
 
-getPools(start_year, end_year, agency_code)
+getPools(start_year, end_year, agency_id)
 
 *Arguments*
 
 - start_year: Beginning of year range 
 - end_year: End of year range
-- agency_code: Agency ID number 
+- agency_id: Agency ID number 
 
 ```{r}
 #Example
@@ -81,28 +102,67 @@ pools = getPools(2022,2023, 55)
 
 ## Write Data to file
 
- write.csv(...)
+You can save retrieved data as a .csv file in your current directory using write.csv().
+That same data can be retrieved using read.csv(). Writing data to a .csv can make the rendering process more efficient when generating reports in R. We recommend that you write the data pulled from our API into a csv and then load that data when generating reports.
+
+
 
  read.csv(...)
 
 ```{r}
+#creates a file named "collections_18_23.csv" in your current directory
+ write.csv(x = collections, file = "collections_18_23.csv")
+
+#loads collections data 
+collections = read.csv("collections_18_23.csv")
 
 ```
 
 
 ## Basic subseting and filtering
 
-```{r}
-#Subset using column names or index
-colnames(collections)
 
+
+Data can be subset to contain columns of interest. Sub-setting can also be used to reorder the columns in a dataframe.Do not subset collections or pools data before inputting them into Vectorsurv calculator functions to avoid losing essential columns. It is recommended to subset after calculations are complete and before inputting into a table generator.
+
+
+```{r}
+#Subset using column names or index number
+
+colnames(collections) #displays column names and associated index
+
+
+#Subseting by name
 collections[c("collection_date","species_display_name","num_count")]
 
-#We can filter using column names
+#by index
+collections[c(3,23,17)]
+
+#to save a subset
+collections_subset = collections[c(3,23,17)]
+```
 
 
-filter(collections,trap_nights==1)
+Dplyr is a powerful package for filtering and sub-setting data. It follows logic similar to SQL queries.
 
+For more information on data manipulation using dplyr [Click Here](https://datacarpentry.org/dc_zurich/R-ecology/04-dplyr.html)
+
+Dplyr utilizes the pipe operator '%>%' to send data into functions.
+
+```{r}
+#Subsetting columns with dplyr 'select'
+collections %>% 
+  select(collection_date,species_display_name,num_count)
+
+#filtering with dplyr 'filter'
+collections %>% 
+  filter(species_display_name=="Cx pipiens")
+
+#filtering multiple arguments using '%in%'
+collections %>% 
+  filter(species_display_name %in% c("Cx pipiens", "Cx tarsalis"),
+         num_trap %in% c(1:5))
+  
 ```
 
 # Calculations
@@ -131,7 +191,11 @@ getAbundance(collections,interval, species_list = NULL, trap_list = NULL, specie
 
 
 ```{r}
-getAbundance(collections, interval = "Biweek", species_list = c("Cx tarsalis", "Cx pipiens"), trap_list = "CO2", species_seperate = FALSE)
+getAbundance(collections,
+             interval = "Biweek",
+             species_list = c("Cx tarsalis", "Cx pipiens"),
+             trap_list = "CO2", 
+             species_seperate = FALSE)
 
 ```
 
@@ -161,9 +225,14 @@ getAbundanceAnomaly(collections,interval,target_year, species_list = NULL, trap_
 
 
 ```{r}
-collections = getArthroCollections(2018,2023, 55)
+collections_18_23 = getArthroCollections(2018,2023, 55)
 
-getAbundanceAnomaly(collections, interval = "Biweek",target_year = 2023, species_list = c("Cx tarsalis", "Cx pipiens"), trap_list = "CO2", species_seperate = FALSE) 
+getAbundanceAnomaly(collections_18_23,
+                    interval = "Biweek",
+                    target_year = 2023,
+                    species_list = c("Cx tarsalis", "Cx pipiens"),
+                    trap_list = "CO2",
+                    species_seperate = FALSE) 
 ```
 
 ## Infection Rate
@@ -192,16 +261,57 @@ getInfectionRate(pools,interval, target_year, target_disease,pt_estimate, specie
 
 
 ```{r}
-IR = getInfectionRate(pools, interval = "Week", target_year = 2023, target_disease = "WNV", pt_estimate = "mle", species_list = c("Cx pipiens"),trap_list = c("CO2","GRVD") )
+IR = getInfectionRate(pools, 
+                      interval = "Week",
+                      target_year = 2023,
+                      target_disease = "WNV",
+                      pt_estimate = "mle", 
+                      species_list = c("Cx pipiens"),
+                      trap_list = c("CO2","GRVD") )
 IR
 ```
 
 ## Vector Index
 
-getVectorIndex()
+
+**getVectorIndex()**
+
+*Description*
+
+getVectorIndex()(..) requires at least five years prior to the target_year of arthro collections data to calculate for the specified parameters. The function uses the methods of the Gateway Abundance Anomaly calculator, and will not work if there is fewer than five years of data present.  
+
+
+*Usage*
+
+getVectorIndex(collections, pools, interval,
+                           target_year,
+                           target_disease,pt_estimate,
+                           species_list=NULL,trap_list =  NULL)
+
+*Arguments*
+- collections: collections data retrieved from getCollections(...)
+- pools: Pools data retrieved from getPools(...) 
+**Note: Years from pools and collections data must match**
+- interval: Calculation interval for abundance, accepts "collection_date","Biweek","Week", and "Month.
+- target_year: Year to calculate infection rate for. This year must be present in the data.
+- target_disease: The disease to calculate infection rate for--i.e. "WNV". Disease acronyms are the accepted input. To see a list of disease acronyms, run unique(pools$target_acronym).
+- pt_estimate: The estimation type for infection rate. Options include: "mle","bc-"mle", "mir."
+- species_list: Species filter for calculating abundance. Species_display_name is the accepted notation. To see a list of species present in your data run unique(pools$species_display_name). If species is unspecified, the default NULL will return data for all species in data.
+- trap_list: Trap filter for calculating abundance. Trap_acronym is the is the accepted notation. Run unique(pools$trap_acronym) to see trap types present in your data. If trap_list is unspecified, the default NULL will return data for all trap types.
+
 
 ```{r}
-#TODO
+source("VS_functions.R")
+pools=getPools(2023,2023,55)
+collections= getArthroCollections(2023,2023,55)
+
+getVectorIndex(collections, pools, interval = "Biweek",
+                           2023,
+                           target_disease = "WNV", pt_estimate = "bc-mle",
+                           species_list=c("Cx tarsalis"), 
+                           
+                           trap_list =  c("CO2"))
+
 ```
 
 # Tables
@@ -227,6 +337,41 @@ getPoolsComparisionTable(pools, "WNV", species_seperate = T)
 ```
 
 
+## Styling Dataframes with kable
+
+Professional looking tables can be produced using the kable and kableExtra packages. See the end of this documentation for extensive use of kable styling
+
+```{r}
+AbAnOutput = getAbundance(collections,
+                    interval = "Biweek",
+                 
+                    species_list = c("Cx tarsalis", "Cx pipiens"),
+                    trap_list = "CO2",
+                    species_seperate = FALSE) 
+head(AbAnOutput)
+
+#As a kable table where column names, font_size, type and much more can be customized
+
+AbAnOutput %>% 
+  kbl(col.names = c("Disease Year", "Biweek", "Count","Trap Events", "Abundance")) %>%
+  kable_styling(bootstrap_options = "striped",
+                              font_size = 16, 
+                html_font = "Cambria")%>%  
+  footnote(general = "Table X: Combined biweekly Abundance Calculation for Cx. tarsalis, pipiens in CO2 traps", general_title = "")
+
+
+```
+## Data using datatables
+
+Interactive html only tables can be produced using the DT package. DT tables allow for sorting and filtering with in a webpage. These are ideal for viewing data but are not compatable with pdf or word formats. 
+
+```{r}
+#AbAnOutput %>% 
+  #datatable(colnames =  c("Disease Year", "Biweek", "Count","Trap Events", "Abundance"))
+```
+
+
+
 
 # Charts
 
@@ -249,7 +394,11 @@ ProcessAbunAnom(AbAnomOutput)
 
 ```{r}
 
-AbAnOut = getAbundanceAnomaly(collections, interval = "Biweek",target_year = 2023, species_list = c("Cx tarsalis", "Cx pipiens"), species_seperate = TRUE) #species_seperate set to true will allow for us to facet wrap along species
+AbAnOut = getAbundanceAnomaly(collections_18_23,
+                              interval = "Biweek",
+                              target_year = 2023, 
+                              species_list = c("Cx tarsalis", "Cx pipiens"),
+                              species_seperate = TRUE) #species_seperate set to true will allow for us to facet wrap along species
 
 
 AbAnOut_L = ProcessAbunAnom(AbAnOut)
@@ -282,9 +431,16 @@ plotInfectionRate(InfRtOutput)
 - InfRtOutput: Output from returned getInfectionRate()
 
 ```{r}
-IR = getInfectionRate(pools, interval = "Week", target_year = 2023, target_disease = "WNV", pt_estimate = "mle", species_list = c("Cx pipiens"),trap_list = c("CO2","GRVD") )
+IR = getInfectionRate(pools, 
+                      interval = "Week", 
+                      target_year = 2023, 
+                      target_disease = "WNV", 
+                      pt_estimate = "mle",
+                      species_list = c("Cx pipiens"),
+                      trap_list = c("CO2","GRVD") )
 
 plotInfectionRate(InfRtOutput = IR)
 
 ```
+
 

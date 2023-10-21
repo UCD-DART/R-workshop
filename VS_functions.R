@@ -15,17 +15,17 @@ if (!require(kableExtra)) install.packages('kableExtra')
 
 
 #Load relevant libraries
-library(httr)
-library(tidyverse)
 library(lubridate)
-library(jsonlite)
-library(DT)
 library(tidyverse)
-library(lubridate)
-library(PooledInfRate)
-library(plotly)
-library(readxl)
 library(devtools)
+library(PooledInfRate)
+library(stringr)
+library(epitools)
+library(plotly)
+library(DT)
+library(httr)
+library(readxl)
+library(jsonlite)
 library(knitr)
 library(kableExtra)
 
@@ -33,8 +33,8 @@ library(kableExtra)
 getToken = function(){
   
   #Prompt credentials
-  username = rstudioapi::askForPassword("Gateway username")
-  password = rstudioapi::askForPassword("Gateway password")
+  username = 'christina_test' #rstudioapi::askForPassword("Gateway username")
+  password = 'mosquitos'#rstudioapi::askForPassword("Gateway password")
   
   
   #HTTP 
@@ -54,8 +54,15 @@ getToken = function(){
  
   your_auth_token <- response_content$token
   
+  ids = c()
+  for (i in 1:length(response_content$agencies)){
+
+    ids = rbind(ids,response_content$agencies[[i]]$id)
+    
+  }
+ 
   
-  return(your_auth_token)
+  return(list(your_auth_token, ids))
 }
 
 #Returns collections data for specified years. Range: [Start_year, End_year]
@@ -64,12 +71,20 @@ getToken = function(){
 
 
 
-getArthroCollections<- function(start_year, end_year, agency_code){
+getArthroCollections<- function(start_year, end_year, agency_id = NULL){
   url <- "https://api.vectorsurv.org/v1/arthropod/collection"
-
+  auth = getToken()
+  
+  agencies = auth[[2]]
+  
+  #if(!is.null(agency_id)){
+  #  agencies = agencies %>%
+  #    filter(agencies_id %in% agency_id)
+  #}
+  
   
   headers <- c(
-    Authorization = paste("Bearer", getToken()),
+    Authorization = paste("Bearer", auth[[1]]),
     "Content-Type" = "application/json"
   )
   
@@ -86,11 +101,16 @@ getArthroCollections<- function(start_year, end_year, agency_code){
       page= as.character(i),
       `query[surv_year][$between][0]` = start_year,
       `query[surv_year][$between][1]` = end_year,
-      `query[agency]` = agency_code
+      `query[agency][$in][0]` = agency_id
+    
+     
     )
     
- 
-    
+   
+   # for (i in length(agencies)){
+   #   params = append(params,list(`query[agency][$in][i-1]` = agencies[i]))
+      
+  #  }
     # Append the query string to the URL
     url_with_params <- modify_url(url, query = params)
     
@@ -130,11 +150,11 @@ getArthroCollections<- function(start_year, end_year, agency_code){
 
 #Returns pools data for specified years. Range: [Start_year, End_year]
 #Calls getToken()
-getPools<- function(start_year, end_year, agency_code){
+getPools<- function(start_year, end_year, agency_id = NULL){
   url <- "https://api.vectorsurv.org/v1/arthropod/pool"
-  
+  auth=getToken()
   headers <- c(
-    Authorization = paste("Bearer", getToken()),
+    Authorization = paste("Bearer", auth[[1]]),
     "Content-Type" = "application/json"
   )
   
@@ -152,7 +172,7 @@ getPools<- function(start_year, end_year, agency_code){
       page= as.character(i),
       `query[surv_year][$between][0]` = start_year,
       `query[surv_year][$between][1]` = end_year,
-      `query[agency]` = agency_code
+      `query[agency]` = agency_id
       
       
     )
@@ -486,17 +506,20 @@ plotInfectionRate = function(InfRtOutput){
 
 getVectorIndex  = function(collections, pools, interval,
                            target_year,
-                           target_disease,
-                           species_list, 
-                           pt_estimate,
-                           trap_list =  NULL, 
-                           species_seperate = FALSE){
+                           target_disease,pt_estimate,
+                           species_list=NULL, 
+                           
+                           trap_list =  NULL){
+  
+  if(!identical(sort(unique(pools$surv_year)), sort(unique(collections$surv_year)))){
+    return("Years in Pools and Collections data do not match. Years much match for function to operate.")
+  }
   
   IR = getInfectionRate(pools, interval, target_year, target_disease, pt_estimate, species_list, trap_list) 
   AB = getAbundance(collections,interval,
                     species_list, 
                     trap_list, 
-                    species_seperate)%>%
+                    species_seperate=FALSE)%>%
     filter(EPIYEAR==target_year)
   
   VI = merge(AB,IR, by = interval)
