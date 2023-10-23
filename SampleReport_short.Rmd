@@ -38,7 +38,7 @@ source("VS_functions.R")
 
 ```{r read-data-into-R, echo=FALSE}
 ##Read your csvs into your R workspace to continue working with them
-collections = read.csv("collections_18_23.csv", sep = ",")
+collections = read.csv("collections_22_23.csv", sep = ";")
 ```
 
 I can include any text relevant to the report, such as a quick summary of what's happening at this point in the season and I can **bold anything that is important** or maybe *italicize it*. This is using the basics of [Markdown](https://www.markdownguide.org/cheat-sheet/). I can also create specific sections, such as Trapping effort, Abundance, West Nile Activity, etc, and can change the header size.
