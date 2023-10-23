@@ -28,20 +28,17 @@ source("VS_functions.R")
 ##Uncomment the code below and and run it once. Before moving on, recomment the code. This will prevent R from retrieving your data each time you knit your file. 
 
 # collections = getArthroCollections(2022,2023)
-# pools = getPools(2022,2023)
 ```
 
 ```{r write-data-to-csv, include=FALSE}
 ##Comment out this code after writing it once so it doesn't write each time you knit your file. 
 
 # write.csv2(collections, file="collections_22_23.csv")
-#write.csv2(pools, file="pools_22_23.csv")
 ```
 
 ```{r read-data-into-R, echo=FALSE}
 ##Read your csvs into your R workspace to continue working with them
 collections = read.csv("collections_18_23.csv", sep = ",")
-pools = read.csv("pools_18_23.csv", sep=",")
 ```
 
 I can include any text relevant to the report, such as a quick summary of what's happening at this point in the season and I can **bold anything that is important** or maybe *italicize it*. This is using the basics of [Markdown](https://www.markdownguide.org/cheat-sheet/). I can also create specific sections, such as Trapping effort, Abundance, West Nile Activity, etc, and can change the header size.
