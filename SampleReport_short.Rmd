@@ -1,7 +1,10 @@
 ---
 title: "VectorSurv Sample Report using R"
-date: "October 25, 2023"
 author: "Prepared by Christina and Olivia"
+date: "October 25, 2023"
+output:
+  html_document:
+    df_print: paged
 geometry: left=1in,right=1in,top=1in,bottom=1in
 ---
 ```{r configure-chunks, include=FALSE}
@@ -11,8 +14,8 @@ knitr::opts_chunk$set(
 ```
 
 ```{r working-directory, include=FALSE}
-getwd()
-setwd("/Users/...")
+# getwd()
+# setwd("/Users/...")
 
 ```
 
@@ -20,29 +23,24 @@ setwd("/Users/...")
 source("VS_functions.R")
 ```
 
-
-
 ```{r retrieve-data-from-API, include=FALSE}
 ##Uncomment the code below and and run it once. Before moving on, recomment the code. This will prevent R from retrieving your data each time you knit your file. 
 
 # collections = getArthroCollections(2022,2023)
 # pools = getPools(2022,2023)
+```
+
+```{r write-data-to-csv, include=FALSE}
+##Comment out this code after writing it once so it doesn't write each time you knit your file. 
 
 # write.csv2(collections, file="collections_22_23.csv")
 #write.csv2(pools, file="pools_22_23.csv")
 ```
 
-
-
-
-```{r read-data, echo=FALSE}
+```{r read-data-into-R, echo=FALSE}
 ##Read your csvs into your R workspace to continue working with them
 collections = read.csv("collections_18_23.csv", sep = ",")
 pools = read.csv("pools_18_23.csv", sep=",")
-# 
-# #the following are options for filtering your data
-# collections = collections %>% 
-#   filter(agency_code == "SAYO")
 ```
 
 I can include any text relevant to the report, such as a quick summary of what's happening at this point in the season and I can **bold anything that is important** or maybe *italicize it*. This is using the basics of [Markdown](https://www.markdownguide.org/cheat-sheet/). I can also create specific sections, such as Trapping effort, Abundance, West Nile Activity, etc, and can change the header size.
@@ -62,7 +60,7 @@ abundance2023 <- getAbundance(collections,
 
 abundance2023 %>% 
   filter(EPIYEAR=="2023") %>%
-  filter(Week>"34") %>%
+  filter(Week>"36") %>%
   kbl(col.names = c("Disease Year","Week","Species" ,"Count","Trap Events", "Mosquitoes per trap night")) %>%
   kable_styling(bootstrap_options = "striped",
                               font_size = 14, 
