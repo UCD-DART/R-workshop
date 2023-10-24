@@ -1,0 +1,149 @@
+---
+title: "VectorSurv Sample Monthly Report using R"
+date: "October 25, 2023"
+author: "Prepared by Christina and Olivia"
+geometry: left=1in,right=1in,top=1in,bottom=1in
+---
+```{r, include=FALSE}
+knitr::opts_chunk$set(
+  message=FALSE, warning=FALSE, results='asis')
+
+```
+
+```{r chunk-2, include=FALSE}
+source("VS_functions.R")
+```
+
+```{r retrieve-data, include=FALSE}
+## Retrieve your data from the VectorSurv API
+##Uncomment the code below and and run it once. Before moving on, recomment the code. This will prevent R from retreiving your data each time you knit your file. 
+
+# collections = getArthroCollections(2018,2023)
+# pools = getPools(2022,2023)
+
+# write.csv2(collections, file="collections_18_23.csv")
+#write.csv2(pools, file="pools_22_23.csv")
+```
+
+```{r read-data, echo=FALSE}
+##Read your csvs into your R workspace to continue working with them
+collections = read.csv("collections_18_23.csv", sep = ",")
+pools = read.csv("pools_18_23.csv", sep=",")
+# 
+# #the following are options for filtering your data
+# collections = collections %>% 
+#   filter(agency_code == "SAYO")
+```
+
+I can include any text relevant to the report, such as a quick summary of what's happened this month.
+
+## Abundance
+
+I can include text anywhere outside of the code chunks and the text will show up in my final file. 
+
+```{r abundance-table, echo=FALSE}
+abundance2023 <- getAbundance(collections,
+                    interval = "Week",
+                    species_list = c("Cx tarsalis", "Cx pipiens"),
+                    trap_list = "CO2",
+                    species_seperate = FALSE) 
+
+
+abundance2023 %>% 
+  filter(EPIYEAR=="2023") %>%
+  filter(Week>"38") %>%
+  kbl(col.names = c("Disease Year", "Week", "Count","Trap Events", "Mosquitoes per trap night")) %>%
+  kable_styling(bootstrap_options = "striped",
+                              font_size = 14, 
+                html_font = "Cambria", full_width = F)%>%  
+  footnote(general = "Table X: Combined biweekly Abundance Calculation for Cx. tarsalis, pipiens in CO2 traps", general_title = "")
+
+```
+
+```{r echo=FALSE, fig.width=9}
+#creates a month column and translates numerics
+collections$week = as.factor(week(collections$collection_date))
+collections_sums = collections %>% 
+  filter(species_display_name %in% c("Ae aegypti", "Ae melanimon", "An freeborni", "Cx pipiens", "Cx tarsalis") ) %>%
+  filter(week %in% c("39", "40", "41", "42")) %>%
+  group_by(week, species_display_name) %>%
+  summarise(sum_count = sum(num_count, na.rm=T))
+
+
+ggplotly(ggplot(data=collections_sums,
+       aes(x = week, y = sum_count, fill = species_display_name))+
+  geom_bar(stat="identity") +
+  labs(title = "Mosquito Counts by Week and Species",x = "Week",
+       y = "Sum of Mosquitoes",
+       fill = "Species"))
+```
+
+```{r abundance-anomaly-plot, echo=FALSE, fig.width=10}
+
+AbAnOut = getAbundanceAnomaly(collections,
+                              interval = "Week",
+                              species_list = c("Cx tarsalis", "Cx pipiens"),
+                              target_year = 2023,
+                              species_seperate = TRUE) #species_seperate set to true will allow for us to facet wrap along species
+
+
+AbAnOut_L = ProcessAbunAnom(AbAnOut)
+
+#Example using ggplot
+ggplotly(AbAnOut_L %>%  filter(Abundance_Type %in% c("2023_Abundance",
+                                            "Five_Year_Avg"))%>%  
+  ggplot(aes(x=Week,
+             y= Abundance_Calculation,
+             color = Abundance_Type)) +
+  geom_point()+ 
+  geom_line() + 
+  facet_wrap(~species_display_name)+
+  labs(title="2023 Abundance Anomaly",y = ""))
+
+```
+
+
+## Infection
+
+```{r pools-table, echo=FALSE}
+getPoolsComparisionTable(pools, "WNV", species_seperate = T) %>%
+  filter(surv_year=="2023", species_display_name %in% c("Cx pipiens", "Cx tarsalis") ) %>%
+  kbl(col.names = c("Disease Year", "Species", "Confirmed","Negative", "Total", "Percent Positive")) %>%
+  kable_styling(bootstrap_options = "striped",
+                font_size = 14,
+                latex_options="scale_down", full_width=F)%>%  
+  footnote(general = "Table X: 2023 WNV Pools by species", general_title = "")
+```
+
+```{r echo=FALSE}
+IR23 = getInfectionRate(pools, interval = "Week", target_year = 2023, target_disease = "WNV", pt_estimate = "mle", species_list = c("Cx tarsalis"),trap_list = c("CO2","GRVD") )
+
+IR22 = getInfectionRate(pools, interval = "Week", target_year = 2022, target_disease = "WNV", pt_estimate = "mle", species_list = c("Cx tarsalis"),trap_list = c("CO2","GRVD") )
+
+plotInfectionRate(InfRtOutput = IR23)
+
+plotInfectionRate(InfRtOutput = IR22)
+```
+
+## Vector Index
+
+```{r vector-index, echo=FALSE}
+VI <- getVectorIndex(collections, pools, interval = "Week",
+                           2023,
+                           target_disease = "WNV", pt_estimate = "bc-mle",
+                           species_list=c("Cx tarsalis"), 
+                           trap_list =  c("CO2"))
+
+VI %>%
+  select(-c(2,6:7,9:10))%>%
+  filter("Week">36) %>%
+  kbl(col.names = c("Week", "Count", "Trap Events", "Abundance", "Infection Rate (MLE)", "Vector Index")) %>%
+  kable_styling(bootstrap_options = "striped",
+                font_size = 14,
+                latex_options="scale_down")%>%  
+  footnote(general = "Table X: Vector Index", general_title = "")
+
+
+```
+
+
