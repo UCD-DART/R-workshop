@@ -20,9 +20,11 @@ knitr::opts_chunk$set(
 
 ### Source files, directories, important functions in R
 
-The working directory is the folder your R session 'lives in.' In general, it is good practice to have your working directory to be set to the folder which houses the open file. getwd() displays the current working directory of the session. You can set the working directory to the path of the desired folder by using setwd(...). 
+The working directory is the folder your R session 'lives in.' In general, it is good practice to have your working directory set to the folder which houses the open file. getwd() displays the current working directory of the session. You can set the working directory to the path of the desired folder by using setwd(...). 
 
-If ever you are confused about a package or function in R studio, typing '?' in front of the argument will display the documentation for that function in your session. For information on Vectorsurv specific functions, please see the documentation below.
+If ever you are confused about a package or function in RStudio, typing '?' in front of the argument will display the documentation for that function in your session. For information on VectorSurv specific functions, please see the documentation below.
+
+In the code, a '#' tells the compiler to ignore that line. This can be used to add comments or to intentionally ignore code. 
 
 ```{r}
 
@@ -47,34 +49,34 @@ setwd("/Users/Christina/Desktop/R-tutorial")
 
 ```
 
-There is one R files. The .R file is a source file that contains all of the functions you will need to run the .RMarkdown files. You do not need to touch the source file. The .RMarkdown is a pre-coded sample report that you can customize to suit your needs. 
+There is one .R file. The .R file is a source file that contains all of the functions you will need to run the .RMarkdown files. You do not need to touch the source file. The .RMarkdown files are pre-coded sample reports that you can customize to suit your needs. 
 
 ```{r}
 #loads relevant packages and functions
-source("VS_functions.R")
+source("source_functions.R")
 
 ```
 
 
 
 
-# Retriving Data
+# Retrieving Data
 
 **getArthroCollections(...)**
 
 *Description*
 
-getArthroCollections(...) obtains collections data on a year range (start_year, end_year) and agency_id. It prompts the user for their Gateway username and password before retrieving the associated data. Agency id is the number associated with your agency through Vectorsurv. If you have access to multiple agencies, id can be used to specific what data you wish to retrieve. You can only retrieve data from agencies linked to your Gateway account. 
+getArthroCollections(...) obtains collections data on a year range (start_year, end_year) and agency_id. It prompts the user for their Gateway username and password before retrieving the associated data. If you do not enter an agency id, you will retrieve all data you have access to in VectorSurv. Adding agency id is helpful for users who have access to multiple agencies, such as state agencies.  Agency id is the number associated with your agency through VectorSurv. You can only retrieve data from agencies linked to your Gateway account. See getToken() below for retrieving a list of your available agencies. 
 
 *Usage*
 
-getArthroCollections(start_year, end_year, agency_code)
+getArthroCollections(start_year, end_year, agency_id)
 
 *Arguments*
 
 - start_year: Beginning of year range 
 - end_year: End of year range
-- agency_id: Agency ID number, if left blank, the defualt will return data for all agencies linked to you account. The majority of users are linked to one agency  
+- agency_id: Agency ID number, if left blank, the default will return data for all agencies linked to you account. The majority of users are linked to one agency  
 
 
 ```{r}
@@ -87,7 +89,7 @@ collections = getArthroCollections(2022,2023, 55)
 
 *Description*
 
-getPools(...) similar to getArthroCollections() obtains pools on a year range (start_year, end_year) and agency_id. It prompts the user for their Gateway username and password before retrieving the associated data. getPools() retrieve data for both mosquito and tick pools.
+getPools(...) similar to getArthroCollections() obtains pools on a year range (start_year, end_year) and agency_id. It prompts the user for their Gateway username and password before retrieving the associated data. getPools() retrieve data for both mosquito and tick pools. If you do not enter an agency id, you will retrieve all data you have access to in VectorSurv. Adding agency id is helpful for users who have access to multiple agencies, such as state agencies.  Agency id is the number associated with your agency through VectorSurv. You can only retrieve data from agencies linked to your Gateway account. See getToken() below for retrieving a list of your available agencies. 
 
 *Usage*
 
@@ -103,6 +105,25 @@ getPools(start_year, end_year, agency_id)
 #Example
 pools = getPools(2022,2023, 55)
 ```
+
+**getToken()**
+
+*Description*
+
+getToken() is called by both getArthroCollections() and getPools() to prompt users for their Gateway credentials. If credentials are accepted, the function returns a user token and a list of agencies available to the user. This function should only be called if you wish to see the list of agencies and associated codes you have access to.
+
+*Usage*
+
+getToken()
+
+*Arguments*
+
+```{r, results='hide'}
+
+getToken()
+
+```
+
 
 ## Write Data to file
 
@@ -127,7 +148,7 @@ collections = read.csv("collections_18_23.csv")
 
 
 
-Data can be subset to contain columns of interest. Sub-setting can also be used to reorder the columns in a dataframe.Do not subset collections or pools data before inputting them into Vectorsurv calculator functions to avoid losing essential columns. It is recommended to subset after calculations are complete and before inputting into a table generator. Remember, subseting, filtering, grouping and summarizing will not change the value of the data unless it is reassigned to the same variable name. We recomment creating a new variable for processed data.  
+Data can be subset to contain columns of interest. Sub-setting can also be used to reorder the columns in a dataframe.Do not subset collections or pools data before inputting them into VectorSurv calculator functions to avoid losing essential columns. It is recommended to subset after calculations are complete and before inputting into a table generator. **Remember, subseting, filtering, grouping and summarizing will not change the value of the data unless it is reassigned to the same variable name.** We recomment creating a new variable for processed data.  
 
 ### Subseting 
 
@@ -153,7 +174,7 @@ Dplyr is a powerful package for filtering and sub-setting data. It follows logic
 
 For more information on data manipulation using dplyr [Click Here](https://datacarpentry.org/dc_zurich/R-ecology/04-dplyr.html)
 
-Dplyr utilizes the pipe operator '%>%' to send data into functions.
+Dplyr utilizes the pipe operator '%>%' to send data into functions. The head() function returns the first few rows of data, specifying head(1) tells the software to return only the first row for viewing purposes. Remove head() to see all the data or reassign the data to a new variable.
 
 ```{r}
 #Subsetting columns with dplyr 'select'
@@ -161,16 +182,20 @@ collections %>%
   select(collection_date,species_display_name,num_count)%>%
   head()
 
+
+```
+Below are more examples for filtering data.
+
+```{r}
+
 #filtering with dplyr 'filter'
-collections %>% 
-  filter(species_display_name=="Cx pipiens") %>%
-  head()
+collections_pip = collections %>% 
+  filter(species_display_name=="Cx pipiens") 
 
 #filtering multiple arguments using '%in%'
-collections %>% 
+collections_pip_tar = collections %>% 
   filter(species_display_name %in% c("Cx pipiens", "Cx tarsalis"),
-         num_trap %in% c(1:5))%>%
-  head()
+         site %in% c(119819,102832)) #filters site codes
   
 ```
 
@@ -191,16 +216,16 @@ collections %>%
 
 collections %>% 
   group_by(collection_date, species_display_name) %>%
-  summarise(sum_count = mean(num_count, na.rm=T))%>%
+  summarise(avg_count = mean(num_count, na.rm=T))%>%
   head()
 ```
 
 ### Pivoting
 
-Data can be manipulated into long and wide (spread sheet) forms using pivot_wider and pivot_longer. By default data from the API is in long form. Here we pivot on species and sex condition names using num_count as values. The end result is data with num_count values in the columns named species_sex. For more on pivoting see ??pivot_longer and ??pivot_wider
+Data can be manipulated into long and wide (spread sheet) forms using pivot_wider and pivot_longer. By default data from the API is in long form. Here we pivot on species and sex condition names using num_count as values. The end result is data with num_count values in the columns named species_sex. For more on pivoting see ??pivot_longer and ??pivot_wider.
 
 ```{r}
-#l
+
 collections_wide = pivot_wider(collections,
                                names_from = c("species_display_name","sex_name"), 
                                values_from = "num_count")
@@ -346,7 +371,7 @@ getVectorIndex(collections, pools, interval,
 
 
 ```{r}
-source("VS_functions.R")
+
 pools=getPools(2023,2023,55)
 collections= getArthroCollections(2023,2023,55)
 
@@ -447,7 +472,7 @@ ggplot(data=collections_sums,
        aes(x = month, y = sum_count, fill = species_display_name))+
   geom_bar(stat="identity") +
   labs(title = "Mosquito Counts by Month and Species",x = "Month",
-       y = "Sum of Mosquitos",
+       y = "Sum of Mosquitoes",
        fill = "Species")
 ```
 
@@ -518,4 +543,23 @@ plotInfectionRate(InfRtOutput = IR)
 
 ```
 
+
+# Additional Charting Examples
+
+We can highlight rows and columns, add headers, and customize footnotes. For more information please [Click Here](https://cran.r-project.org/web/packages/kableExtra/vignettes/awesome_table_in_html.html#Grouped_Columns__Rows) 
+
+```{r}
+collections= getArthroCollections(2021,2023,55)
+
+table(collections$trap_acronym,collections$surv_year)%>% 
+  kbl(align = "c") %>%
+    kable_paper(full_width = F,
+                html_font="arial",
+                lightable_options = "striped",
+                ) %>% 
+  add_header_above(c("Trap Type", "Years" = 3)) %>%
+  footnote(general = "Table X: Traps deployed by year", general_title = "") %>%
+  row_spec(c(3,9,10), background = "yellow")%>%
+  column_spec(c(4), background = "orange")
+```
 

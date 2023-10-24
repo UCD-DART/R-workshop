@@ -2,7 +2,8 @@
 if (!require(lubridate)) install.packages('lubridate')
 if (!require(tidyverse)) install.packages('tidyverse')
 if (!require(devtools)) install.packages('devtools')
-if (!require(PooledInfRate)) devtools::install_github("https://github.com/CDCgov/PooledInfRate",build_vignettes = TRUE)#
+if (!require(PooledInfRate)) devtools::install_github("https://github.com/CDCgov/PooledInfRate",
+                                                      build_vignettes = TRUE)#
 if (!require(stringr)) install.packages('stringr')
 if (!require(epitools)) install.packages('epitools')
 if (!require(plotly)) install.packages('plotly')
@@ -57,7 +58,7 @@ getToken = function(){
   ids = c()
   for (i in 1:length(response_content$agencies)){
 
-    ids = rbind(ids,response_content$agencies[[i]]$id)
+    ids = rbind(ids,cbind(response_content$agencies[[i]]$id,response_content$agencies[[i]]$code))
     
   }
  
