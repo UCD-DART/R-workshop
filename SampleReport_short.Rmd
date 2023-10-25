@@ -21,7 +21,7 @@ getwd()
 ```
 
 ```{r load-source-file, include=FALSE}
-source("VS_functions.R")
+source("source_functions.R")
 ```
 
 ```{r retrieve-data-from-API, include=FALSE}
