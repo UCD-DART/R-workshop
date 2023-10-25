@@ -19,10 +19,10 @@ source("source_functions.R")
 ##Uncomment the code below and and run it once. Before moving on, recomment the code. This will prevent R from retreiving your data each time you knit your file. 
 
 # collections = getArthroCollections(2018,2023)
-# pools = getPools(2022,2023)
+# pools = getPools(2018,2023)
 
 # write.csv2(collections, file="collections_18_23.csv")
-#write.csv2(pools, file="pools_22_23.csv")
+#write.csv2(pools, file="pools_18_23.csv")
 ```
 
 ```{r read-data, echo=FALSE}
@@ -119,6 +119,25 @@ ggplotly(AbAnOut_L %>%  filter(Abundance_Type %in% c("2023_Abundance",
   facet_wrap(~species_display_name)+
   labs(title="Abundance Anomaly",y = ""))
 
+```
+
+```{r abundance-anomaly-change-plot, echo=FALSE, fig.width=8, fig.height=4}
+delta_plt = AbAnOut_L %>% 
+  filter(Abundance_Type =="Delta")%>%
+  mutate(Change = ifelse(Abundance_Calculation > 0, "Increase", "Decrease")) %>%
+  ggplot(aes(x=Week,
+             y= Abundance_Calculation,
+             fill=Change)) +
+  geom_bar(stat="identity")+
+    coord_cartesian(xlim =c(39,42), ylim=c(-50,150)) +
+  scale_x_continuous(breaks = seq(39,42, by=1))+
+  facet_wrap(~species_display_name)+
+  labs(x="Biweek",
+       y="Percent Change", 
+       title = "Relative Abundance 2023, % Change from 5-year average",
+       fill="Relative Change") 
+
+delta_plt
 ```
 
 
