@@ -427,12 +427,11 @@ getInfectionRate = function(pools,interval, target_year,target_disease,pt_estima
 
 
 #Produces a frequency table for positive and negative pools counts by year
-getPoolsComparisionTable = function(pools,target_disease, species_seperate=F){
-  
+getPoolsComparisionTable = function(pools, interval, target_disease, species_seperate=F){
   
   pools_status = pools %>%
     filter(target_acronym==target_disease)%>%
-    group_by(surv_year) %>%
+    group_by(surv_year, Week) %>%
     count(status_name)%>%
     pivot_wider(id_cols = c(surv_year),
                 names_from = "status_name", 
@@ -442,7 +441,7 @@ getPoolsComparisionTable = function(pools,target_disease, species_seperate=F){
   
   if(species_seperate == T){
     pools_status = pools %>% filter(target_acronym==target_disease)%>%
-      group_by(surv_year, species_display_name) %>%
+      group_by(surv_year, species_display_name, Week) %>%
       count(status_name)%>%
       pivot_wider(id_cols = c(surv_year,species_display_name),
                   names_from = "status_name", 
@@ -493,13 +492,16 @@ plotInfectionRate = function(InfRtOutput){
   interval_name = colnames(InfRtOutput)[2]
   colnames(InfRtOutput)[2]="INTERVAL"
   InfRtOutput %>%
-    ggplot(aes(x = INTERVAL, y = Point_Estimate, color= "Infection Rate"))+
-    geom_point( color="firebrick")+
-    geom_path( fill="firebrick")+
+    ggplot(aes(x = INTERVAL, y = Point_Estimate))+
+    geom_point( color="navyblue")+
+    geom_path( fill="navyblue")+
     geom_line(aes(INTERVAL, Lower_CI), color = "steelblue", size = 0.1) + 
     geom_line(aes(INTERVAL, Upper_CI), color = "steelblue", size = 0.1) + 
-    geom_ribbon(aes(ymin=Lower_CI, ymax=Upper_CI), alpha=0.2, fill = "steelblue2") +
-    labs(x=interval_name, color = "") ->IR_plot
+    geom_ribbon(aes(ymin=Lower_CI, ymax=Upper_CI), alpha=0.2, fill = "steelblue2", color=NA) +
+    labs(x=interval_name, y="Point Estimate (MLE and 95% CI)")+
+    ggtitle("WNV Infection Rate")+
+    coord_cartesian(xlim =c(39,42), ylim =c(0,15)) +
+    scale_x_continuous(breaks = seq(39,42, by=1))->IR_plot
   
   return(IR_plot)
   
