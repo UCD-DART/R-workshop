@@ -98,8 +98,8 @@ getArthroCollections<- function(start_year, end_year, agency_id = NULL){
       `populate[]` = "agency",
       `populate[]` = "trap",
       #`populate[]` = "site",
-      pageSize = "100",
-      page= as.character(i),
+      pageSize = "1000",
+       page= as.character(i),
       `query[surv_year][$between][0]` = start_year,
       `query[surv_year][$between][1]` = end_year,
       `query[agency][$in][0]` = agency_id
@@ -169,7 +169,7 @@ getPools<- function(start_year, end_year, agency_id = NULL){
       `populate[]` = "status",
       `populate[]` = "trap",
       `populate[]` = "species",
-      pageSize = "100",
+      pageSize = "1000",
       page= as.character(i),
       `query[surv_year][$between][0]` = start_year,
       `query[surv_year][$between][1]` = end_year,
@@ -201,6 +201,8 @@ getPools<- function(start_year, end_year, agency_id = NULL){
     
     i=i+1
   }
+  #Prevents conflicting data types within $test list
+  pools$test=lapply(pools$test, as.data.frame)
   
   pools = pools%>%
     unnest(test, keep_empty = T, names_sep = "_")
@@ -233,9 +235,9 @@ getAbundance <- function(collections,interval, species_list = NULL, trap_list = 
     return("Incorrect interval input. Interval accepts inputs of 'Week','Biweek'or 'Month'")
   }
   collections$INTERVAL = switch(interval, 
-                                 "Week"= epiweek(collections$collection_date),
-                                 "Biweek"= ceiling(epiweek(collections$collection_date)/2),
-                                 "Month"= month(collections$collection_date))
+                                 "Week"= as.numeric(epiweek(collections$collection_date)),
+                                 "Biweek"= as.numeric(ceiling(epiweek(collections$collection_date)/2)),
+                                 "Month"= as.numeric(month(collections$collection_date)))
   
   if(is.null(species_list)){
     species_list = unique(collections$species_display_name)
@@ -370,9 +372,9 @@ getInfectionRate = function(pools,interval, target_year,target_disease,pt_estima
 
   pools$EPIYEAR = epiyear(pools$collection_date) 
   pools$INTERVAL = switch(interval, 
-                          "Week"= epiweek(pools$collection_date),
-                          "Biweek"= ceiling(epiweek(pools$collection_date)/2),
-                          "Month"= month(pools$collection_date))
+                                "Week"= as.numeric(epiweek(pools$collection_date)),
+                                "Biweek"= as.numeric(ceiling(epiweek(pools$collection_date)/2)),
+                                "Month"= as.numeric(month(pools$collection_date)))
   
   if(is.null(species_list)){
     species_list = unique(pools$species_display_name)
