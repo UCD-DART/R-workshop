@@ -30,9 +30,13 @@ library(jsonlite)
 library(knitr)
 library(kableExtra)
 
+
+
+
 #This function is called within getCollections(...) and getPools(...), it prompts the user for Vectorsurv Gateway credentials and returns the associated access token.
 getToken = function(){
   
+
   #Prompt credentials
   username = rstudioapi::askForPassword("Gateway username")
   password = rstudioapi::askForPassword("Gateway password")
@@ -53,7 +57,7 @@ getToken = function(){
   
   response_content <- content(response, 'parsed') 
  
-  your_auth_token <- response_content$token
+  token <- response_content$token
   
   ids = c()
   for (i in 1:length(response_content$agencies)){
@@ -63,7 +67,7 @@ getToken = function(){
   }
  
   
-  return(list(your_auth_token, ids))
+  return(token)
 }
 
 #Returns collections data for specified years. Range: [Start_year, End_year]
@@ -72,20 +76,20 @@ getToken = function(){
 
 
 
-getArthroCollections<- function(start_year, end_year, agency_id = NULL){
+getArthroCollections<- function(token, start_year, end_year){
   url <- "https://api.vectorsurv.org/v1/arthropod/collection"
-  auth = getToken()
+ # auth = getToken()
   
-  agencies = auth[[2]]
+ # agencies = auth[[2]]
   
   #if(!is.null(agency_id)){
   #  agencies = agencies %>%
   #    filter(agencies_id %in% agency_id)
   #}
   
-  
+
   headers <- c(
-    Authorization = paste("Bearer", auth[[1]]),
+    Authorization = paste("Bearer", token),
     "Content-Type" = "application/json"
   )
   
@@ -97,28 +101,23 @@ getArthroCollections<- function(start_year, end_year, agency_id = NULL){
       `populate[]` = "arthropods",
       `populate[]` = "agency",
       `populate[]` = "trap",
-      #`populate[]` = "site",
       pageSize = "1000",
-       page= as.character(i),
+       page = as.character(i),
       `query[surv_year][$between][0]` = start_year,
-      `query[surv_year][$between][1]` = end_year,
-      `query[agency][$in][0]` = agency_id
+      `query[surv_year][$between][1]` = end_year
+     # `query[agency][$in][0]` = agency_id
     
      
     )
     
-   
-   # for (i in length(agencies)){
-   #   params = append(params,list(`query[agency][$in][i-1]` = agencies[i]))
-      
-  #  }
+  
     # Append the query string to the URL
     url_with_params <- modify_url(url, query = params)
     
     tryCatch({
       response <- GET(url_with_params, add_headers(headers))
       content <- content(response, as = "text")
-      
+     
       df_content = fromJSON(content, flatten = T)
       
       #Breaks loop when df_content returns no more data 
@@ -132,7 +131,7 @@ getArthroCollections<- function(start_year, end_year, agency_id = NULL){
     
     i=i+1
   }
-  
+ 
   #Prevents conflicting data types within $arthropods list
    collections$arthropods=lapply(collections$arthropods, as.data.frame)
   
@@ -151,11 +150,11 @@ getArthroCollections<- function(start_year, end_year, agency_id = NULL){
 
 #Returns pools data for specified years. Range: [Start_year, End_year]
 #Calls getToken()
-getPools<- function(start_year, end_year, agency_id = NULL){
+getPools<- function(token, start_year, end_year){
   url <- "https://api.vectorsurv.org/v1/arthropod/pool"
-  auth=getToken()
+
   headers <- c(
-    Authorization = paste("Bearer", auth[[1]]),
+    Authorization = paste("Bearer", token),
     "Content-Type" = "application/json"
   )
   
@@ -172,8 +171,8 @@ getPools<- function(start_year, end_year, agency_id = NULL){
       pageSize = "1000",
       page= as.character(i),
       `query[surv_year][$between][0]` = start_year,
-      `query[surv_year][$between][1]` = end_year,
-      `query[agency]` = agency_id
+      `query[surv_year][$between][1]` = end_year
+     # `query[agency]` = agency_id
       
       
     )
@@ -430,12 +429,12 @@ getInfectionRate = function(pools,interval, target_year,target_disease,pt_estima
 
 #Produces a frequency table for positive and negative pools counts by year
 getPoolsComparisionTable = function(pools, interval, target_disease, species_seperate=F){
-  
+  pools$Week = epiweek(pools$collection_date)
   pools_status = pools %>%
     filter(target_acronym==target_disease)%>%
     group_by(surv_year, Week) %>%
     count(status_name)%>%
-    pivot_wider(id_cols = c(surv_year),
+    pivot_wider(id_cols = c(surv_year,Week),
                 names_from = "status_name", 
                 values_from = "n",values_fill = 0)%>%
     mutate(Total = sum(Confirmed,Negative, na.rm=T))%>%
@@ -445,7 +444,7 @@ getPoolsComparisionTable = function(pools, interval, target_disease, species_sep
     pools_status = pools %>% filter(target_acronym==target_disease)%>%
       group_by(surv_year, species_display_name, Week) %>%
       count(status_name)%>%
-      pivot_wider(id_cols = c(surv_year,species_display_name),
+      pivot_wider(id_cols = c(surv_year,Week, species_display_name),
                   names_from = "status_name", 
                   values_from = "n",values_fill = 0)%>%
       mutate(Total = sum(Confirmed,Negative, na.rm=T))%>%
