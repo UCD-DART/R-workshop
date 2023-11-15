@@ -33,7 +33,7 @@ library(kableExtra)
 
 
 
-#This function is called within getCollections(...) and getPools(...), it prompts the user for Vectorsurv Gateway credentials and returns the associated access token.
+#This function returns the associated access token.
 getToken = function(){
   
 
