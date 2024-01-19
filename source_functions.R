@@ -59,12 +59,8 @@ getToken = function(){
  
   token <- response_content$token
   
-  ids = c()
-  for (i in 1:length(response_content$agencies)){
 
-    ids = rbind(ids,cbind(response_content$agencies[[i]]$id,response_content$agencies[[i]]$code))
-    
-  }
+ 
  
   
   return(token)
@@ -78,14 +74,7 @@ getToken = function(){
 
 getArthroCollections<- function(token, start_year, end_year){
   url <- "https://api.vectorsurv.org/v1/arthropod/collection"
- # auth = getToken()
-  
- # agencies = auth[[2]]
-  
-  #if(!is.null(agency_id)){
-  #  agencies = agencies %>%
-  #    filter(agencies_id %in% agency_id)
-  #}
+
   
 
   headers <- c(
@@ -429,32 +418,45 @@ getInfectionRate = function(pools,interval, target_year,target_disease,pt_estima
 
 #Produces a frequency table for positive and negative pools counts by year
 getPoolsComparisionTable = function(pools, interval, target_disease, species_seperate=F){
-  pools$Week = epiweek(pools$collection_date)
+  
+  pools$EPIYEAR = epiyear(pools$collection_date)
+  
+  if(!interval%in%c("Week","Biweek","Month")){
+    return("Incorrect interval input. Interval accepts inputs of 'Week','Biweek'or 'Month'")
+  }
+  pools$INTERVAL = switch(interval,
+                          "Week"= as.numeric(epiweek(pools$collection_date)),
+                          "Biweek"= as.numeric(ceiling(epiweek(pools$collection_date)/2)),
+                          "Month"= as.numeric(month(pools$collection_date)))
   pools_status = pools %>%
     filter(target_acronym==target_disease)%>%
-    group_by(surv_year, Week) %>%
+    group_by(EPIYEAR, INTERVAL) %>%
     count(status_name)%>%
-    pivot_wider(id_cols = c(surv_year,Week),
-                names_from = "status_name", 
+    pivot_wider(id_cols = c(EPIYEAR,INTERVAL),
+                names_from = "status_name",
                 values_from = "n",values_fill = 0)%>%
     mutate(Total = sum(Confirmed,Negative, na.rm=T))%>%
-    mutate(PercentPositive = (Confirmed/Total)*100) 
+    mutate(`Percent Positive` = round((Confirmed/Total)*100,2))
   
   if(species_seperate == T){
     pools_status = pools %>% filter(target_acronym==target_disease)%>%
-      group_by(surv_year, species_display_name, Week) %>%
+      group_by(EPIYEAR, species_display_name, INTERVAL) %>%
       count(status_name)%>%
-      pivot_wider(id_cols = c(surv_year,Week, species_display_name),
-                  names_from = "status_name", 
+      pivot_wider(id_cols = c(EPIYEAR,INTERVAL, species_display_name),
+                  names_from = "status_name",
                   values_from = "n",values_fill = 0)%>%
       mutate(Total = sum(Confirmed,Negative, na.rm=T))%>%
-      mutate(PercentPositive = (Confirmed/Total)*100) 
+      mutate(`Percent Positive` = round((Confirmed/Total)*100, 2))
     
   }
   
-
+  colnames(pools_status)[1:2] = c("Year",interval)
+  
   return(pools_status)
 }
+
+
+
 
 #Produces a table of the types of traps set for each year present in the current data
 getTrapTypeTally = function(collections){
